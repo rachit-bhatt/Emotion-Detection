@@ -34,6 +34,5 @@ def main():
             confidence = result[0]['score']
             st.write(f'Sentiment: {sentiment} with confidence: {confidence:.2f}')
 
-
 if __name__ == '__main__':
     main()
