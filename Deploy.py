@@ -1,73 +1,39 @@
-from flask import Flask, request, jsonify, render_template
-from pandas import DataFrame, concat
+import streamlit as st
 import pickle
-from tensorflow.keras.models import load_model
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-import numpy as np
+import joblib
 
-# Initialize the Flask app
-app = Flask(__name__)
+model_file_name = 'model.pkl'
 
-# Load your trained model (update the filename and loading method based on your model type)
-model_filename = 'lstm_model_with_regularization.h5'
-model = load_model(model_filename)
-print('Model Loaded.')
+# Load the saved SVM model
+with open(model_file_name, 'rb') as f:
+    SVM_model = pickle.load(f)
 
-# Define the label mapping (update based on your model's output classes)
-EMOTION_LABELS = {
-    0: 'Happy',
-    1: 'Sad',
-    2: 'Angry',
-    3: 'Fearful',
-    4: 'Neutral',
-}
+# Load the trained SVM model
+svm_model = joblib.load(model_file_name)
 
-@app.route('/')
-def home():
-    return render_template('index.html')  # You need an index.html file in a 'templates' folder
+# Get user input for text
+user_input = st.text_input("Enter text for sentiment analysis:")
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    """Handle prediction requests."""
-    try:
-        # Extract input data from the request (adjust for your data format)
-        data = request.json
-        if not data or 'comment' not in data:
-            return jsonify({'error': 'Invalid input, expected a JSON object with a "comment" field.'}), 400
+# Perform sentiment analysis using the SVM model
+if user_input:
+    # Then use the trained SVM model to make predictions
+    predicted_label = svm_model.predict([user_input])[0]
 
-        comment = data['comment']
-        # You may need to preprocess the comment based on your model's requirements
-        # Example: Convert text to feature vector (update this as needed)
-        processed_input = preprocess_comment([comment])  # Define your preprocessing function
-        print('Pre-Processed Input:', processed_input)
+    # Display the sentiment prediction
+    st.write("Sentiment:", predicted_label)
 
-        try:
-            # Perform the prediction
-            prediction = model.predict(processed_input)
-            print('Prediction:', prediction)
-        except Exception as ex:
-            print('Exception!', ex)
+#Defining a function to collect the user input and make predictions
 
-        emotion = EMOTION_LABELS.get(prediction[0], 'Unknown')
-        print('Emotion:', emotion)
+def main():
+    st.title('Sentiment Analysis with NLP Model')
+    text_input = st.text_area('Enter text:', 'Type your text here...')
+    if st.button('Analyze'):
+        if text_input:
+            result = svm_model(text_input)
+            sentiment = result[0]['label']
+            confidence = result[0]['score']
+            st.write(f'Sentiment: {sentiment} with confidence: {confidence:.2f}')
 
-        return jsonify({'emotion': emotion})
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-def preprocess_comment(comments):
-    """Placeholder for preprocessing the input comment. Update this based on your model."""
-    # Example: Tokenization, vectorization, etc.
-    # Here we simply return the raw comment; replace with actual preprocessing logic
-    vector = TfidfVectorizer()
-    text_vector = vector.fit_transform(comments)
-    svd = TruncatedSVD()
-    vector_df = svd.fit_transform(text_vector)
-    # vector_df = DataFrame(vector_df)
-    # return concat([DataFrame(comments), vector_df], axis = 1)
-    return vector_df
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    main()
