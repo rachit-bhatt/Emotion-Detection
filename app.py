@@ -19,7 +19,7 @@ import streamlit as st
 import joblib
 
 # Load the trained SVM model
-svm_model = joblib.load('/content/SVM_model (1).sav')
+svm_model = joblib.load('sentiment_model_1.h5')
 
 # Get user input for text
 user_input = st.text_input("Enter text for sentiment analysis:")
